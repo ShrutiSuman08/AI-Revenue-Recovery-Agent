@@ -57,3 +57,36 @@ def get_summary():
 
     finally:
         db.close()
+
+
+# -----------------------------------------
+# GET FAILED PAYMENTS
+# -----------------------------------------
+
+@api.route("/api/payments", methods=["GET"])
+def get_payments():
+
+    db = SessionLocal()
+
+    try:
+        payments = (
+            db.query(Payment)
+            .filter(Payment.status == "failed")
+            .limit(5)
+            .all()
+        )
+
+        return jsonify([
+            {
+                "payment_id": payment.payment_id,
+                "amount": round(payment.amount, 2),
+                "payment_method": payment.payment_method,
+                "failure_reason": payment.failure_reason,
+                "attempt_count": payment.attempt_count,
+                "status": payment.status
+            }
+            for payment in payments
+        ])
+
+    finally:
+        db.close()
