@@ -4,7 +4,8 @@ from database.connection import SessionLocal
 from database.models import (
     Payment,
     RecoveryCase,
-    RecoveryAttempt
+    RecoveryAttempt,
+    AuditLog
 )
 
 api = Blueprint("api", __name__)
@@ -148,4 +149,35 @@ def get_recovery_attempts():
         ])
 
     finally:
+        db.close()        
+
+
+@api.route("/api/audit-logs", methods=["GET"])
+def get_audit_logs():
+
+    db = SessionLocal()
+
+    try:
+
+        logs = (
+            db.query(AuditLog)
+            .order_by(AuditLog.timestamp.desc())
+            .all()
+        )
+
+        return jsonify([
+            {
+                "log_id": log.log_id,
+                "case_id": log.case_id,
+                "event": log.event,
+                "reason": log.reason,
+                "action": log.action,
+                "result": log.result,
+                "timestamp": log.timestamp.isoformat()
+            }
+            for log in logs
+        ])
+
+    finally:
+
         db.close()        
