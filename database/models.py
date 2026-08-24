@@ -130,6 +130,10 @@ class RecoveryCase(Base):
     payment = relationship(
         "Payment"
     )
+    attempts = relationship(
+        "RecoveryAttempt",
+        back_populates="case"
+    )
 
 
 class RecoveryAttempt(Base):
@@ -168,8 +172,9 @@ class RecoveryAttempt(Base):
     )
 
     case = relationship(
-        "RecoveryCase"
-    )
+    "RecoveryCase",
+    back_populates="attempts"
+)
 
 
 class AuditLog(Base):
