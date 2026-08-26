@@ -1,5 +1,6 @@
-from flask import Blueprint, jsonify
-
+from flask import Blueprint, jsonify,request
+from services.agent_service import process_payment
+from services.razorpay_import_service import import_razorpay_payment
 from database.connection import SessionLocal
 from database.models import (
     Payment,
@@ -20,14 +21,35 @@ def get_summary():
         failed_payments = (
             db.query(Payment)
             .filter(Payment.status == "failed")
-            .limit(5)
             .all()
         )
 
-        revenue_at_risk = sum(
-            payment.amount
-            for payment in failed_payments
-        )
+        # -----------------------------------------
+        # CALCULATE REVENUE STILL AT RISK
+        # -----------------------------------------
+
+        revenue_at_risk = 0.0
+
+        for payment in failed_payments:
+
+            latest_case = (
+                db.query(RecoveryCase)
+                .filter(
+                    RecoveryCase.payment_id == payment.payment_id
+                )
+                .order_by(
+                    RecoveryCase.case_id.desc()
+                )
+                .first()
+            )
+
+            # Don't count successfully recovered payments
+            if not latest_case or latest_case.status != "recovered":
+                revenue_at_risk += payment.amount
+
+        # -----------------------------------------
+        # CALCULATE REVENUE RECOVERED
+        # -----------------------------------------
 
         recovered_cases = (
             db.query(RecoveryCase)
@@ -42,6 +64,10 @@ def get_summary():
             for case in recovered_cases
             for attempt in case.attempts
         )
+
+        # -----------------------------------------
+        # RECOVERY RATE
+        # -----------------------------------------
 
         recovery_rate = (
             revenue_recovered / revenue_at_risk * 100
@@ -60,7 +86,6 @@ def get_summary():
     finally:
         db.close()
 
-
 # -----------------------------------------
 # GET FAILED PAYMENTS
 # -----------------------------------------
@@ -74,7 +99,7 @@ def get_payments():
         payments = (
             db.query(Payment)
             .filter(Payment.status == "failed")
-            .limit(5)
+            
             .all()
         )
 
@@ -83,12 +108,18 @@ def get_payments():
         for payment in payments:
 
             recovery_case = (
-                db.query(RecoveryCase)
-                .filter(
-                    RecoveryCase.payment_id == payment.payment_id
-                )
-                .first()
-            )
+    db.query(RecoveryCase)
+    .filter(
+        RecoveryCase.payment_id == payment.payment_id
+    )
+    .order_by(
+        RecoveryCase.case_id.desc()
+    )
+    .first()
+)
+                
+                
+            
 
             payment_data = {
                 "payment_id": payment.payment_id,
@@ -181,3 +212,131 @@ def get_audit_logs():
     finally:
 
         db.close()        
+
+
+@api.route("/api/run-recovery", methods=["POST"])
+def run_recovery():
+
+    from services.batch_recovery_service import run_batch_recovery
+
+    try:
+
+        result = run_batch_recovery()
+
+        return jsonify({
+            "success": True,
+            "result": result
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500        
+
+
+@api.route("/api/import-razorpay-payment", methods=["POST"])
+def import_razorpay_payment_route():
+
+    from flask import request
+
+    try:
+
+        data = request.get_json()
+
+        payment_id = data.get("payment_id")
+
+        if not payment_id:
+
+            return jsonify({
+                "success": False,
+                "error": "payment_id is required."
+            }), 400
+
+        payment = import_razorpay_payment(
+            payment_id
+        )
+
+        return jsonify({
+            "success": True,
+            "payment": {
+                "payment_id": payment.payment_id,
+                "amount": round(payment.amount, 2),
+                "status": payment.status,
+                "payment_method": payment.payment_method,
+                "failure_reason": payment.failure_reason
+            }
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500    
+
+@api.route("/api/recover-payment", methods=["POST"])
+def recover_payment():
+
+    db = SessionLocal()
+
+    try:
+
+        data = request.get_json()
+
+        payment_id = data.get("payment_id")
+
+        if not payment_id:
+
+            return jsonify({
+                "success": False,
+                "error": "payment_id is required."
+            }), 400
+
+        payment = (
+            db.query(Payment)
+            .filter(
+                Payment.payment_id == payment_id
+            )
+            .first()
+        )
+
+        if not payment:
+
+            return jsonify({
+                "success": False,
+                "error": "Payment not found."
+            }), 404
+
+        if payment.status != "failed":
+
+            return jsonify({
+                "success": False,
+                "error": (
+                    f"Payment is already "
+                    f"{payment.status}."
+                )
+            }), 400
+
+        result = process_payment(
+            payment,
+            db
+        )
+
+        return jsonify({
+            "success": True,
+            "result": result
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        db.close()
+    

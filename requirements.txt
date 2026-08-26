@@ -1,5 +1,12 @@
+flask
 streamlit
+requests
 pandas
 sqlalchemy
 python-dotenv
 faker
+langchain
+langchain-groq
+groq
+pydantic
+razorpay

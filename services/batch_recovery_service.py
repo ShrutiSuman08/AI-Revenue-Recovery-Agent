@@ -1,39 +1,133 @@
 from database.connection import SessionLocal
-from database.models import Payment
+from database.models import Payment, RecoveryCase
 from services.agent_service import process_payment
 
 
 def run_batch_recovery():
+
     db = SessionLocal()
 
     try:
-        payments = (
+
+        # -----------------------------------------
+        # FIND FAILED PAYMENTS
+        # -----------------------------------------
+
+        failed_payments = (
             db.query(Payment)
             .filter(Payment.status == "failed")
-            .limit(5)
             .all()
         )
+
+        # -----------------------------------------
+        # DETERMINE ELIGIBLE PAYMENTS
+        # -----------------------------------------
+
+        eligible_payments = []
+
+        for payment in failed_payments:
+
+            existing_case = (
+                db.query(RecoveryCase)
+                .filter(
+                    RecoveryCase.payment_id == payment.payment_id
+                )
+                .order_by(
+                    RecoveryCase.case_id.desc()
+                )
+                .first()
+            )
+
+            # No recovery case yet
+            if not existing_case:
+
+                eligible_payments.append(payment)
+
+            # Already recovered
+            elif existing_case.status == "recovered":
+
+                print(
+                    f"Skipping {payment.payment_id} - "
+                    f"case already recovered."
+                )
+
+            # Permanently blocked
+            elif existing_case.status == "blocked":
+
+                print(
+                    f"Skipping {payment.payment_id} - "
+                    f"case is blocked."
+                )
+
+            # Waiting for human review
+            elif existing_case.status == "manual_review":
+
+                print(
+                    f"Skipping {payment.payment_id} - "
+                    f"awaiting manual review."
+                )
+
+            # Previous automatic recovery failed
+            elif existing_case.status == "failed":
+
+                print(
+                    f"Retry eligible: "
+                    f"{payment.payment_id} - "
+                    f"previous attempt failed."
+                )
+
+                eligible_payments.append(payment)
+
+        # -----------------------------------------
+        # SMALL DEVELOPMENT BATCH
+        # -----------------------------------------
+
+        payments = eligible_payments[:5]
+
+        # -----------------------------------------
+        # BATCH HEADER
+        # -----------------------------------------
 
         print("\n========================================")
         print("       AI REVENUE RECOVERY BATCH")
         print("========================================")
 
-        print(f"Failed payments found: {len(payments)}")
+        print(
+            f"Eligible failed payments: {len(payments)}"
+        )
+
+        # -----------------------------------------
+        # REVENUE AT RISK
+        # -----------------------------------------
 
         total_revenue_at_risk = sum(
-            payment.amount for payment in payments
+            payment.amount
+            for payment in payments
         )
 
         print(
-            f"Revenue at risk: ₹{total_revenue_at_risk:,.2f}"
+            f"Revenue at risk: "
+            f"₹{total_revenue_at_risk:,.2f}"
         )
+
+        # -----------------------------------------
+        # COUNTERS
+        # -----------------------------------------
 
         successful = 0
         failed = 0
         blocked = 0
+        manual_review = 0
         revenue_recovered = 0.0
 
-        for index, payment in enumerate(payments, start=1):
+        # -----------------------------------------
+        # PROCESS PAYMENTS
+        # -----------------------------------------
+
+        for index, payment in enumerate(
+            payments,
+            start=1
+        ):
 
             print(
                 f"\n[{index}/{len(payments)}] "
@@ -41,6 +135,7 @@ def run_batch_recovery():
             )
 
             try:
+
                 result = process_payment(
                     payment,
                     db
@@ -53,8 +148,10 @@ def run_batch_recovery():
                     0.0
                 )
 
-                # Count actual successful recoveries
-                # based on recovered revenue.
+                # ---------------------------------
+                # CLASSIFY RESULT
+                # ---------------------------------
+
                 if recovered_amount > 0:
 
                     successful += 1
@@ -62,6 +159,10 @@ def run_batch_recovery():
                 elif status == "blocked":
 
                     blocked += 1
+
+                elif status == "manual_review":
+
+                    manual_review += 1
 
                 else:
 
@@ -78,6 +179,10 @@ def run_batch_recovery():
 
                 failed += 1
 
+        # -----------------------------------------
+        # RECOVERY RATE
+        # -----------------------------------------
+
         recovery_rate = (
             (
                 revenue_recovered
@@ -87,12 +192,17 @@ def run_batch_recovery():
             else 0
         )
 
+        # -----------------------------------------
+        # RESULTS
+        # -----------------------------------------
+
         print("\n========================================")
         print("       BATCH RECOVERY RESULTS")
         print("========================================")
 
         print(
-            f"Payments analyzed: {len(payments)}"
+            f"Payments analyzed: "
+            f"{len(payments)}"
         )
 
         print(
@@ -116,6 +226,11 @@ def run_batch_recovery():
         )
 
         print(
+            f"Manual review cases: "
+            f"{manual_review}"
+        )
+
+        print(
             f"Revenue recovered: "
             f"₹{revenue_recovered:,.2f}"
         )
@@ -133,13 +248,16 @@ def run_batch_recovery():
             "successful_recoveries": successful,
             "failed_attempts": failed,
             "blocked_cases": blocked,
+            "manual_review_cases": manual_review,
             "revenue_recovered": revenue_recovered,
             "recovery_rate": recovery_rate,
         }
 
     finally:
+
         db.close()
 
 
 if __name__ == "__main__":
+
     run_batch_recovery()

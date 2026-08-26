@@ -1,28 +1,24 @@
 from database.connection import SessionLocal
 from database.models import (
-    RecoveryCase,
     RecoveryAttempt,
-    AuditLog
+    AuditLog,
+    RecoveryCase
 )
 
 
-def reset_recovery_data():
+db = SessionLocal()
 
-    db = SessionLocal()
+try:
 
-    try:
-        db.query(AuditLog).delete()
-        db.query(RecoveryAttempt).delete()
-        db.query(RecoveryCase).delete()
+    db.query(RecoveryAttempt).delete()
+    db.query(AuditLog).delete()
+    db.query(RecoveryCase).delete()
 
-        db.commit()
+    db.commit()
 
-        print("Recovery data reset successfully.")
-        print("Customers and payments were preserved.")
+    print("Recovery data reset successfully.")
+    print("Customers and payments were preserved.")
 
-    finally:
-        db.close()
+finally:
 
-
-if __name__ == "__main__":
-    reset_recovery_data()
+    db.close()

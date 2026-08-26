@@ -12,57 +12,92 @@ def save_recovery_case(
     payment,
     decision,
     policy_decision,
-    recovery_result
+    recovery_result,
+    existing_case=None
 ):
     """
-    Persist the complete recovery workflow
-    into RecoveryCase, RecoveryAttempt and AuditLog.
+    Persist the complete recovery workflow.
+
+    Reuses an existing recovery case for retries
+    and creates a new RecoveryAttempt and AuditLog
+    for every recovery execution.
     """
 
     # -----------------------------------------
-    # 1. Determine final case status
+    # 1. DETERMINE FINAL CASE STATUS
     # -----------------------------------------
 
-    if not policy_decision.allowed:
+    if decision.recommended_action == "manual_review":
+
+        case_status = "manual_review"
+
+    elif not policy_decision.allowed:
+
         case_status = "blocked"
 
     elif recovery_result.success:
+
         case_status = "recovered"
 
     else:
+
         case_status = "failed"
 
     # -----------------------------------------
-    # 2. Create RecoveryCase
+    # 2. CREATE OR REUSE RECOVERY CASE
     # -----------------------------------------
 
-    recovery_case = RecoveryCase(
-        payment_id=payment.payment_id,
-        risk_level=decision.risk_level,
-        diagnosis=decision.diagnosis,
-        recommended_action=decision.recommended_action,
-        confidence=decision.confidence,
-        status=case_status
-    )
+    if existing_case:
 
-    db.add(recovery_case)
+        recovery_case = existing_case
 
-    # Generate case_id
-    db.flush()
-
-    # -----------------------------------------
-    # 3. Create RecoveryAttempt
-    # -----------------------------------------
-
-    attempt_result = (
-        "blocked"
-        if not policy_decision.allowed
-        else (
-            "success"
-            if recovery_result.success
-            else "failed"
+        recovery_case.risk_level = decision.risk_level
+        recovery_case.diagnosis = decision.diagnosis
+        recovery_case.recommended_action = (
+            decision.recommended_action
         )
-    )
+        recovery_case.confidence = decision.confidence
+        recovery_case.status = case_status
+
+    else:
+
+        recovery_case = RecoveryCase(
+            payment_id=payment.payment_id,
+            risk_level=decision.risk_level,
+            diagnosis=decision.diagnosis,
+            recommended_action=decision.recommended_action,
+            confidence=decision.confidence,
+            status=case_status
+        )
+
+        db.add(recovery_case)
+
+        # Generate case_id
+        db.flush()
+
+    # -----------------------------------------
+    # 3. DETERMINE RECOVERY ATTEMPT RESULT
+    # -----------------------------------------
+
+    if decision.recommended_action == "manual_review":
+
+        attempt_result = "manual_review"
+
+    elif not policy_decision.allowed:
+
+        attempt_result = "blocked"
+
+    elif recovery_result.success:
+
+        attempt_result = "success"
+
+    else:
+
+        attempt_result = "failed"
+
+    # -----------------------------------------
+    # 4. CREATE RECOVERY ATTEMPT
+    # -----------------------------------------
 
     recovery_attempt = RecoveryAttempt(
         case_id=recovery_case.case_id,
@@ -75,10 +110,16 @@ def save_recovery_case(
     db.add(recovery_attempt)
 
     # -----------------------------------------
-    # 4. Create Audit Log
+    # 5. CREATE AUDIT LOG
     # -----------------------------------------
 
-    if not policy_decision.allowed:
+    if decision.recommended_action == "manual_review":
+
+        audit_event = "manual_review_required"
+        audit_reason = recovery_result.message
+        audit_result = "manual_review"
+
+    elif not policy_decision.allowed:
 
         audit_event = "recovery_blocked"
         audit_reason = policy_decision.reason
@@ -108,12 +149,11 @@ def save_recovery_case(
     db.add(audit_log)
 
     # -----------------------------------------
-    # 5. Commit everything together
+    # 6. COMMIT
     # -----------------------------------------
 
     db.commit()
 
-    # Refresh generated case_id
     db.refresh(recovery_case)
 
     return recovery_case
