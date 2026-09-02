@@ -102,7 +102,7 @@ export default function App() {
       </div>
 
       {/* Error */}
-      {data.error && <ErrorBanner message={`Unable to connect to the recovery service. Make sure the Flask backend is running on port 5000. (${data.error})`} />}
+      {data.error && <ErrorBanner message={`Unable to connect to the recovery service. Confirm the Flask service is running on port 5000, then refresh this page. (${data.error})`} />}
 
       {/* KPIs */}
       <KpiGrid summary={data.summary} />

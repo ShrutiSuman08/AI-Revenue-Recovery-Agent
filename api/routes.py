@@ -1,6 +1,4 @@
-from flask import Blueprint, jsonify,request
-from services.agent_service import process_payment
-from services.razorpay_import_service import import_razorpay_payment
+from flask import Blueprint, jsonify, request
 from database.connection import SessionLocal
 from database.models import (
     Payment,
@@ -239,7 +237,7 @@ def run_recovery():
 @api.route("/api/import-razorpay-payment", methods=["POST"])
 def import_razorpay_payment_route():
 
-    from flask import request
+    from services.razorpay_import_service import import_razorpay_payment
 
     try:
 
@@ -319,6 +317,7 @@ def recover_payment():
                 )
             }), 400
 
+        from services.agent_service import process_payment
         result = process_payment(
             payment,
             db
