@@ -1,17 +1,9 @@
-flask
 streamlit
-requests
-pandas
 sqlalchemy
 python-dotenv
-faker
-razorpay
-
 pydantic
-
 langchain
 langchain-groq
 langgraph
 groq
-
 pytest
