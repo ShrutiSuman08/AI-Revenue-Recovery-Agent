@@ -2,49 +2,28 @@ import os
 
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from pydantic import BaseModel, Field
+
+from models.agent_models import (
+    PaymentEvidence,
+    RecoveryDecision,
+)
 
 
 load_dotenv()
 
 
-# -----------------------------------------
-# AI DECISION STRUCTURE
-# -----------------------------------------
-
-class RecoveryDecision(BaseModel):
-
-    diagnosis: str = Field(
-        description="Diagnosis of why the payment failed"
-    )
-
-    risk_level: str = Field(
-        description="Risk level: low, medium, or high"
-    )
-
-    recommended_action: str = Field(
-        description="Recommended recovery action"
-    )
-
-    reason: str = Field(
-        description="Explanation for the recommendation"
-    )
-
-    confidence: float = Field(
-        description="Confidence score between 0 and 1"
-    )
+AVAILABLE_ACTIONS = [
+    "retry",
+    "request_alternate_payment",
+    "notify_and_retry_later",
+    "manual_review",
+]
 
 
-# -----------------------------------------
-# CREATE LLM
-# -----------------------------------------
-
-def create_llm():
-
+def create_llm() -> ChatGroq:
     api_key = os.getenv("GROQ_API_KEY")
 
     if not api_key:
-
         raise ValueError(
             "GROQ_API_KEY is not configured in .env"
         )
@@ -52,57 +31,37 @@ def create_llm():
     return ChatGroq(
         model="openai/gpt-oss-20b",
         temperature=0,
-        api_key=api_key
+        api_key=api_key,
     )
 
 
-# -----------------------------------------
-# ANALYZE PAYMENT
-# -----------------------------------------
-
 def analyze_payment(
-    payment,
-    previous_actions=None,
-    previous_results=None
-):
+    payment: PaymentEvidence,
+) -> RecoveryDecision:
+    """
+    Analyze payment evidence and recommend a recovery strategy.
 
-    # -----------------------------------------
-    # DEFAULT VALUES
-    # -----------------------------------------
+    This function only recommends an action.
+    It does not authorize or execute recovery.
+    """
 
-    if previous_actions is None:
-        previous_actions = []
-
-    if previous_results is None:
-        previous_results = []
-
-
-    # -----------------------------------------
-    # FORMAT PREVIOUS ATTEMPTS
-    # -----------------------------------------
-
-    if previous_actions:
-
+    if payment.recovery_history:
         previous_attempts_text = "\n".join(
-            f"- Action: {action} | "
-            f"Result: {result}"
-            for action, result
-            in zip(
-                previous_actions,
-                previous_results
+            (
+                f"- Action: {attempt.action} | "
+                f"Result: {attempt.result}"
             )
+            for attempt in payment.recovery_history
         )
-
     else:
-
         previous_attempts_text = (
             "No previous recovery attempts."
         )
 
-
-    # -----------------------------------------
-    # CREATE LLM
-    # -----------------------------------------
+    available_actions_text = "\n".join(
+        f"- {action}"
+        for action in AVAILABLE_ACTIONS
+    )
 
     llm = create_llm()
 
@@ -110,15 +69,11 @@ def analyze_payment(
         RecoveryDecision
     )
 
-
-    # -----------------------------------------
-    # AI PROMPT
-    # -----------------------------------------
-
     prompt = f"""
-You are an AI revenue recovery analyst.
+You are the reasoning component of an autonomous revenue
+recovery system.
 
-Analyze the following failed payment.
+Analyze the following failed payment evidence.
 
 Payment ID:
 {payment.payment_id}
@@ -132,59 +87,43 @@ Payment method:
 Failure reason:
 {payment.failure_reason}
 
-Previous payment attempts:
+Payment-provider attempt count:
 {payment.attempt_count}
-
 
 PREVIOUS RECOVERY ATTEMPTS:
 
 {previous_attempts_text}
 
+AVAILABLE RECOVERY ACTIONS:
+
+{available_actions_text}
 
 Your task:
 
-1. Diagnose why the payment failed.
-2. Determine the risk level.
-3. Recommend the best recovery action.
-4. Explain why the action is appropriate.
+1. Diagnose the likely reason for the payment failure.
+2. Determine the risk level as low, medium, or high.
+3. Recommend one recovery action.
+4. Explain why that action is appropriate.
 5. Provide a confidence score from 0 to 1.
 
+RECOVERY MEMORY RULES:
 
-Possible recovery actions:
-
-- retry
-- request_alternate_payment
-- notify_and_retry_later
-- manual_review
-- no_action
-
-
-IMPORTANT RECOVERY MEMORY RULES:
-
-- Review the previous recovery attempts carefully.
-- If an action previously failed, do NOT recommend the same
+- Review previous recovery attempts carefully.
+- If an action previously failed, avoid recommending the same
   action again unless there is a strong reason.
-- Prefer a different recovery strategy after a failed attempt.
-- If multiple recovery strategies have already failed,
-  consider manual_review or no_action.
-- Do not repeatedly recommend "retry".
-- The recovery process should become more conservative
-  after repeated failures.
-
+- Prefer a different strategy after an unsuccessful attempt.
+- Become more conservative after repeated failures.
+- Use manual_review when automatic recovery is no longer
+  appropriate.
 
 IMPORTANT:
 
-Do NOT execute any payment action.
-
-Only provide a recommendation.
-
-The final action will be decided by a separate
-deterministic policy engine.
+- Do not claim that a recovery action has succeeded before it
+  has actually been executed.
+- Do not execute any payment action.
+- Only recommend an action.
+- A separate deterministic policy tool has final authority over
+  whether the recommendation may execute.
 """
-
-
-    # -----------------------------------------
-    # GET STRUCTURED AI DECISION
-    # -----------------------------------------
 
     return structured_llm.invoke(prompt)

@@ -1,0 +1,503 @@
+{
+  "goal": "Analyze todays failed payments, recover eligible revenue while respecting company recovery policies, handle unsuccessful recovery attempts safely, and produce an auditable recovery report.",
+  "plan": {
+    "goal": "Analyze today's failed payments, recover eligible revenue while respecting company recovery policies, handle unsuccessful recovery attempts safely, and produce an auditable recovery report.",
+    "steps": [
+      {
+        "step_id": "step_1",
+        "objective": "Retrieve and aggregate evidence for all payments that failed today",
+        "rationale": "Collecting payment ID, amount, status, method, failure reason, attempt count, and prior recovery attempts provides the data foundation for analysis and policy compliance.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_2",
+        "objective": "Analyze each failed payment to determine eligibility for automatic recovery",
+        "rationale": "Evaluation of amount, failure reason, and prior attempts identifies which payments meet the deterministic policy thresholds for automatic actions.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_3",
+        "objective": "Validate proposed automatic recovery actions against deterministic policies",
+        "rationale": "Ensures that the selected action (retry, request_alternate_payment, or notify_and_retry_later) complies with maximum amount limits and maximum automatic attempt counts before execution.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_4",
+        "objective": "Simulate and execute approved automatic recovery actions",
+        "rationale": "Running the actions in a simulated environment confirms feasibility, then performing them attempts revenue recovery while staying within policy constraints.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_5",
+        "objective": "Observe outcomes of automatic actions and adapt strategy for any failures",
+        "rationale": "Monitoring unsuccessful attempts allows the system to apply alternative automatic actions where safe, or to recognize when further automation is inappropriate.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_6",
+        "objective": "Escalate payments that cannot be safely recovered automatically to manual_review",
+        "rationale": "When policy limits are reached or actions are unsupported, manual review ensures safe handling and compliance with company guidelines.",
+        "status": "completed"
+      },
+      {
+        "step_id": "step_7",
+        "objective": "Generate a comprehensive, auditable recovery report",
+        "rationale": "Documenting retrieved evidence, analysis decisions, policy validations, action outcomes, and escalations provides traceability and satisfies reporting requirements.",
+        "status": "completed"
+      }
+    ]
+  },
+  "execution_trace": [
+    {
+      "timestamp": "2026-09-26T11:08:13.732625+00:00",
+      "event": "plan_created",
+      "details": {
+        "goal": "Analyze todays failed payments, recover eligible revenue while respecting company recovery policies, handle unsuccessful recovery attempts safely, and produce an auditable recovery report.",
+        "step_count": 7
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:13.732625+00:00",
+      "event": "plan_validated",
+      "details": {
+        "valid": true,
+        "errors": []
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:13.732625+00:00",
+      "event": "payments_loaded",
+      "details": {
+        "source": "demo_fixture",
+        "payment_count": 6,
+        "payment_ids": [
+          "PAY-001",
+          "PAY-002",
+          "PAY-003",
+          "PAY-004",
+          "PAY-005",
+          "PAY-006"
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:13.732625+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-001",
+        "batch_index": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:15.151418+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-001",
+        "recommended_action": "retry",
+        "risk_level": "low",
+        "confidence": 0.8,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:15.153434+00:00",
+      "event": "policy_approved",
+      "details": {
+        "payment_id": "PAY-001",
+        "proposed_action": "retry",
+        "allowed": true,
+        "reason": "Recovery action passed all policy checks."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:15.155449+00:00",
+      "event": "recovery_succeeded",
+      "details": {
+        "payment_id": "PAY-001",
+        "action": "retry",
+        "success": true,
+        "recovered_amount": 2500.0,
+        "failure_type": null,
+        "failure_injected": false
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:15.157466+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-001",
+        "amount": 2500.0,
+        "status": "recovered",
+        "final_action": "retry",
+        "recovered_amount": 2500.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using retry."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:15.157466+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-002",
+        "batch_index": 1
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:16.276819+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-002",
+        "recommended_action": "request_alternate_payment",
+        "risk_level": "low",
+        "confidence": 0.9,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:16.276819+00:00",
+      "event": "policy_approved",
+      "details": {
+        "payment_id": "PAY-002",
+        "proposed_action": "request_alternate_payment",
+        "allowed": true,
+        "reason": "Recovery action passed all policy checks."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:16.276819+00:00",
+      "event": "recovery_succeeded",
+      "details": {
+        "payment_id": "PAY-002",
+        "action": "request_alternate_payment",
+        "success": true,
+        "recovered_amount": 1800.0,
+        "failure_type": null,
+        "failure_injected": false
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:16.276819+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-002",
+        "amount": 1800.0,
+        "status": "recovered",
+        "final_action": "request_alternate_payment",
+        "recovered_amount": 1800.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using request_alternate_payment."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:16.276819+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-003",
+        "batch_index": 2
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:17.299208+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-003",
+        "recommended_action": "retry",
+        "risk_level": "low",
+        "confidence": 0.8,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:17.299208+00:00",
+      "event": "policy_blocked",
+      "details": {
+        "payment_id": "PAY-003",
+        "proposed_action": "retry",
+        "allowed": false,
+        "reason": "Payment amount exceeds automatic recovery limit."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:17.299208+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-003",
+        "amount": 15000.0,
+        "status": "policy_blocked",
+        "final_action": "retry",
+        "recovered_amount": 0.0,
+        "failure_count": 0,
+        "reason": "Payment amount exceeds automatic recovery limit."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:17.299208+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-004",
+        "batch_index": 3
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:18.414827+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-004",
+        "recommended_action": "retry",
+        "risk_level": "low",
+        "confidence": 0.8,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:18.414827+00:00",
+      "event": "policy_approved",
+      "details": {
+        "payment_id": "PAY-004",
+        "proposed_action": "retry",
+        "allowed": true,
+        "reason": "Recovery action passed all policy checks."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:18.416843+00:00",
+      "event": "recovery_failed",
+      "details": {
+        "payment_id": "PAY-004",
+        "action": "retry",
+        "success": false,
+        "recovered_amount": 0.0,
+        "failure_type": "injected_failure",
+        "failure_injected": true
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:18.416843+00:00",
+      "event": "recovery_failure_recorded",
+      "details": {
+        "payment_id": "PAY-004",
+        "failed_action": "retry",
+        "failure_type": "injected_failure",
+        "failure_count": 1
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:19.600690+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-004",
+        "recommended_action": "notify_and_retry_later",
+        "risk_level": "medium",
+        "confidence": 0.8,
+        "failure_count": 1
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:19.600690+00:00",
+      "event": "policy_approved",
+      "details": {
+        "payment_id": "PAY-004",
+        "proposed_action": "notify_and_retry_later",
+        "allowed": true,
+        "reason": "Recovery action passed all policy checks."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:19.600690+00:00",
+      "event": "recovery_succeeded",
+      "details": {
+        "payment_id": "PAY-004",
+        "action": "notify_and_retry_later",
+        "success": true,
+        "recovered_amount": 4500.0,
+        "failure_type": null,
+        "failure_injected": false
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:19.600690+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-004",
+        "amount": 4500.0,
+        "status": "recovered",
+        "final_action": "notify_and_retry_later",
+        "recovered_amount": 4500.0,
+        "failure_count": 1,
+        "reason": "Payment successfully recovered using notify_and_retry_later."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:19.600690+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-005",
+        "batch_index": 4
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:20.826240+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-005",
+        "recommended_action": "request_alternate_payment",
+        "risk_level": "medium",
+        "confidence": 0.7,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:20.826240+00:00",
+      "event": "policy_blocked",
+      "details": {
+        "payment_id": "PAY-005",
+        "proposed_action": "request_alternate_payment",
+        "allowed": false,
+        "reason": "Maximum automatic recovery attempts reached."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:20.828252+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-005",
+        "amount": 3000.0,
+        "status": "policy_blocked",
+        "final_action": "request_alternate_payment",
+        "recovered_amount": 0.0,
+        "failure_count": 0,
+        "reason": "Maximum automatic recovery attempts reached."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:20.828252+00:00",
+      "event": "payment_selected",
+      "details": {
+        "payment_id": "PAY-006",
+        "batch_index": 5
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:21.664587+00:00",
+      "event": "recovery_recommended",
+      "details": {
+        "payment_id": "PAY-006",
+        "recommended_action": "retry",
+        "risk_level": "low",
+        "confidence": 0.9,
+        "failure_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:21.664587+00:00",
+      "event": "policy_approved",
+      "details": {
+        "payment_id": "PAY-006",
+        "proposed_action": "retry",
+        "allowed": true,
+        "reason": "Recovery action passed all policy checks."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:21.664587+00:00",
+      "event": "recovery_succeeded",
+      "details": {
+        "payment_id": "PAY-006",
+        "action": "retry",
+        "success": true,
+        "recovered_amount": 3200.0,
+        "failure_type": null,
+        "failure_injected": false
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:21.664587+00:00",
+      "event": "case_finalized",
+      "details": {
+        "payment_id": "PAY-006",
+        "amount": 3200.0,
+        "status": "recovered",
+        "final_action": "retry",
+        "recovered_amount": 3200.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using retry."
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:08:21.664587+00:00",
+      "event": "report_generated",
+      "details": {
+        "total_payments": 6,
+        "recovered_revenue": 12000.0
+      }
+    }
+  ],
+  "final_report": {
+    "goal": "Analyze todays failed payments, recover eligible revenue while respecting company recovery policies, handle unsuccessful recovery attempts safely, and produce an auditable recovery report.",
+    "summary": {
+      "total_payments": 6,
+      "total_revenue_at_risk": 30000.0,
+      "recovered_payments": 4,
+      "recovered_revenue": 12000.0,
+      "policy_blocked_payments": 2,
+      "manual_review_payments": 0,
+      "failed_recovery_attempts": 1
+    },
+    "cases": [
+      {
+        "payment_id": "PAY-001",
+        "amount": 2500.0,
+        "status": "recovered",
+        "final_action": "retry",
+        "recovered_amount": 2500.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using retry."
+      },
+      {
+        "payment_id": "PAY-002",
+        "amount": 1800.0,
+        "status": "recovered",
+        "final_action": "request_alternate_payment",
+        "recovered_amount": 1800.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using request_alternate_payment."
+      },
+      {
+        "payment_id": "PAY-003",
+        "amount": 15000.0,
+        "status": "policy_blocked",
+        "final_action": "retry",
+        "recovered_amount": 0.0,
+        "failure_count": 0,
+        "reason": "Payment amount exceeds automatic recovery limit."
+      },
+      {
+        "payment_id": "PAY-004",
+        "amount": 4500.0,
+        "status": "recovered",
+        "final_action": "notify_and_retry_later",
+        "recovered_amount": 4500.0,
+        "failure_count": 1,
+        "reason": "Payment successfully recovered using notify_and_retry_later."
+      },
+      {
+        "payment_id": "PAY-005",
+        "amount": 3000.0,
+        "status": "policy_blocked",
+        "final_action": "request_alternate_payment",
+        "recovered_amount": 0.0,
+        "failure_count": 0,
+        "reason": "Maximum automatic recovery attempts reached."
+      },
+      {
+        "payment_id": "PAY-006",
+        "amount": 3200.0,
+        "status": "recovered",
+        "final_action": "retry",
+        "recovered_amount": 3200.0,
+        "failure_count": 0,
+        "reason": "Payment successfully recovered using retry."
+      }
+    ]
+  }
+}

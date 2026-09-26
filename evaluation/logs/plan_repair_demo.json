@@ -1,0 +1,99 @@
+{
+  "scenario": "planner_repair",
+  "goal": "Analyze failed payments, recover eligible revenue while respecting company recovery policies, and produce an auditable recovery report.",
+  "deliberately_invalid_input": true,
+  "external_llm_repair_mocked": true,
+  "original_plan": {
+    "goal": "Analyze failed payments, recover eligible revenue while respecting company recovery policies, and produce an auditable recovery report.",
+    "steps": [
+      {
+        "step_id": "bad_step",
+        "objective": "Recover failed payments",
+        "rationale": "Attempt to recover revenue.",
+        "status": "pending"
+      }
+    ]
+  },
+  "initial_validation_errors": [
+    "Plan must contain between 5 and 8 steps."
+  ],
+  "repaired_plan": {
+    "goal": "Analyze failed payments, recover eligible revenue while respecting company recovery policies, and produce an auditable recovery report.",
+    "steps": [
+      {
+        "step_id": "step_1",
+        "objective": "Retrieve failed payments",
+        "rationale": "Evidence is required before recovery decisions.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_2",
+        "objective": "Investigate payment evidence",
+        "rationale": "Failure context is required before selecting actions.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_3",
+        "objective": "Recommend recovery actions",
+        "rationale": "Eligible payments need an appropriate recovery strategy.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_4",
+        "objective": "Validate actions against policy",
+        "rationale": "Unsafe or prohibited actions must not execute.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_5",
+        "objective": "Execute approved recovery actions",
+        "rationale": "Only policy-approved actions may attempt recovery.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_6",
+        "objective": "Handle unsuccessful attempts",
+        "rationale": "Failures require adaptation or safe escalation.",
+        "status": "pending"
+      },
+      {
+        "step_id": "step_7",
+        "objective": "Generate an auditable report",
+        "rationale": "Operations teams need traceable results.",
+        "status": "pending"
+      }
+    ]
+  },
+  "final_validation_errors": [],
+  "execution_trace": [
+    {
+      "timestamp": "2026-09-26T11:27:25.216157+00:00",
+      "event": "plan_validation_failed",
+      "details": {
+        "valid": false,
+        "errors": [
+          "Plan must contain between 5 and 8 steps."
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:27:25.216157+00:00",
+      "event": "plan_repaired",
+      "details": {
+        "repair_attempt": 1,
+        "previous_errors": [
+          "Plan must contain between 5 and 8 steps."
+        ],
+        "step_count": 7
+      }
+    },
+    {
+      "timestamp": "2026-09-26T11:27:25.216157+00:00",
+      "event": "plan_validated",
+      "details": {
+        "valid": true,
+        "errors": []
+      }
+    }
+  ]
+}
